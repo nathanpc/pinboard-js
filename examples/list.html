@@ -6,8 +6,14 @@
 		<script src="../pinboard.js" type="text/javascript"></script>
 		<script type="text/javascript">
 			function onload() {
-				var pinboard = new Pinboard("username", "password");
-				document.getElementById("list").innerHTML += "<li>" + pinboard.server_url + "</li>"
+				var pinboard = new Pinboard("username");
+				pinboard.login("password", function (token, error) {
+					if (error) {
+						return alert("ERROR: " + error.status + " - " + error.message);
+					}
+
+					document.getElementById("list").innerHTML += "<li>" + pinboard.server_url + "</li>";
+				});
 			}
 		</script>
 	</head>

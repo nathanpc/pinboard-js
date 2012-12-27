@@ -9,18 +9,17 @@
  *	@constructor
  *
  *	@param {String} username - The username
- *	@param {String} password - The password
- *	@param {String} [req_proxy] - A proxy URL for Cross-Domain requests
+ *	@param {String} [proxy] - A proxy URL for Cross-Domain requests
  */
-function Pinboard(username, password, req_proxy) {
-	if (!req_proxy) {
-		req_proxy = "";
+function Pinboard(username, proxy) {
+	if (!proxy) {
+		proxy = "";
 	}
 
 	this.username = username;
-	this.password = password;
-	this.req_proxy = req_proxy;
-	this.server_url = this.req_proxy + "https://" + username + ":" + password + "@api.pinboard.in/v1";
+	this.auth_token = null;
+	this.proxy = proxy;
+	this.server_url = this.proxy + "https://api.pinboard.in/v1";
 }
 
 /**
@@ -29,29 +28,51 @@ function Pinboard(username, password, req_proxy) {
  *	@param {String} method - The HTTP method for the request.
  *	@param {String} params - Pinboard API URL parameters.
  *	@param {String} body - Body of a POST request. (Use null if there's none)
- *	@param {Function} statechange - XMLHttpRequest.onreadystatechange
+ *	@param {Function} statechange(req) - XMLHttpRequest.onreadystatechange
  */
 Pinboard.prototype.request = function (method, params, body, statechange) {
+	var url = this.server_url + params + "?auth_token=" + this.username + ":" + this.auth_token + "?format=json";
 	var req = new XMLHttpRequest();
+
 	req.onreadystatechange = function () {
-		statechange(req);
+		if (req.readyState === 4) {
+			statechange(req);
+		}
 	};
 	
-	req.open(method, this.server_url + params, true);
+	req.open(method, url, true);
 	req.send(body);
 }
 
 /**
- *	
+ *	Login the user and gets the authentication token.
+ *
+ *	@param {String} password - The user password
+ *	@param {Function} callback(auth_token, error) - Returns the authentication token or a error
  */
-/*Pinboard.prototype.login = function (username, password, callback) {
-	this.request("GET", "/", null, function (req) {
+Pinboard.prototype.login = function (password, callback) {
+	var url = this.proxy + "https://" + this.username + ":" + password + "@api.pinboard.in/v1/user/api_token/?format=json";
+	var req = new XMLHttpRequest();
+	var outer_scope = this;
+	
+	req.onreadystatechange = function () {
 		if (req.readyState === 4) {
 			if (req.status === 200) {
-				
+				// You're logged in!
+				var token = JSON.parse(req.responseText).result;
+
+				outer_scope.auth_token = token;
+				callback(token);
+			} else if (req.status === 401) {
+				// Looks like someone typed the wrong user/pass combination.
+				callback(null, {
+					status: 401,
+					message: "The username or password you've entered are incorrect."
+				});
 			}
 		}
-	});
-
-	callback(token, error);
-}*/
+	};
+	
+	req.open("GET", url, true);
+	req.send(null);
+}
