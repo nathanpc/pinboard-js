@@ -12,7 +12,12 @@
 						return alert("ERROR: " + error.status + " - " + error.message);
 					}
 
-					document.getElementById("list").innerHTML += "<li>" + pinboard.server_url + "</li>";
+					pinboard.list_posts(function (posts, error) {
+						console.log(posts);
+						for (var i = 0; i < posts.length; i++) {
+							document.getElementById("list").innerHTML += "<li><a href=\"" + posts[i].href + "\">" + posts[i].description + "</a></li>";
+						}
+					});
 				});
 			}
 		</script>
