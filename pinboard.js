@@ -32,20 +32,34 @@ function Pinboard(username, proxy, encode_url) {
  *	AJAX helper function. I'm using this just to keep the library code clean.
  *
  *	@param {String} method - The HTTP method for the request.
+ *	@param {String} api_method - Pinboard API URL method.
  *	@param {String} params - Pinboard API URL parameters.
  *	@param {String} body - Body of a POST request. (Use null if there's none)
  *	@param {Function} statechange(req) - XMLHttpRequest.onreadystatechange
  */
-Pinboard.prototype.request = function (method, params, body, statechange) {
+Pinboard.prototype.request = function (method, api_method, params, body, statechange) {
 	if (this.auth_token === null) {
 		return console.error("You still haven't logged in.");
 	}
 
-	var url = this.server_url + params + "?auth_token=" + this.username + ":" + this.auth_token + "&format=json";
+	var url = this.server_url + api_method + "?auth_token=" + this.username + ":" + this.auth_token + "&format=json";
 	var req = new XMLHttpRequest();
 	
-	if (params.indexOf("?") !== -1) {
-		url = this.server_url + params + "&auth_token=" + this.username + ":" + this.auth_token + "&format=json";
+	if (params !== null) {
+		var param_str = "";
+		for (var i = 0; i < params.length; i++) {
+			var current_param = params[i];
+
+			if (i === 0) {
+				param_str += "?";
+			} else {
+				param_str += "&";
+			}
+
+			param_str += current_param.name + "=" + encodeURIComponent(current_param.value);
+		}
+
+		url = this.server_url + api_method + param_str + "&auth_token=" + this.username + ":" + this.auth_token + "&format=json";
 	}
 
 	if (this.encode_url) {
@@ -105,10 +119,43 @@ Pinboard.prototype.login = function (password, callback) {
  *	List the user's posts
  *
  *	@param {Function} callback - Returns the posts JSON
- *	@param {Object} [params] - /posts/all optinal parameters
+ *	@param {Array} [params] - /posts/all optinal parameters ({"name": "", "value": ""} format)
  */
 Pinboard.prototype.list_posts = function (callback, params) {
-	this.request("GET", "/posts/all", null, function (status, response) {
+	if (params === undefined) {
+		params = null;
+	}
+
+	this.request("GET", "/posts/all", params, null, function (status, response) {
+		if (status === 200) {
+			// Got your posts
+			callback(response);
+		} else if (status === 429) {
+			// Stop requesting!
+			callback(null, {
+				status: status,
+				message: "Too many requests. Try again in 5 minutes."
+			});
+		}
+	});
+}
+
+/**
+ *	Add a new bookmark
+ *
+ *	@param {String} url - URL to bookmark
+ *	@param {String} description - Bookmark description
+ *	@param {Function} callback - The usual (result, error) callback
+ *	@param {Array} [params] - /posts/add optinal parameters ({"name": "", "value": ""} format)
+ */
+Pinboard.prototype.add = function (url, title, callback, params) {
+	if (params === undefined) {
+		params = [];
+	}
+
+	params = [{ name: "url", value: url }, { name: "description", value: title }].concat(params);
+
+	this.request("GET", "/posts/add", params, null, function (status, response) {
 		if (status === 200) {
 			// Got your posts
 			callback(response);
