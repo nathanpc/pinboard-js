@@ -9,10 +9,15 @@
  *	@constructor
  *
  *	@param {String} username - The username
+ *	@param {String} [auth_token=null] - The user's auth token (got with Pinboard.login)
  *	@param {String} [proxy] - A proxy URL for Cross-Domain requests
  *	@param {Boolean} [encode_url] - Encode the URL (Required for some proxy scripts)
  */
-function Pinboard(username, proxy, encode_url) {
+function Pinboard(username, auth_token, proxy, encode_url) {
+	if (auth_token === undefined) {
+		auth_token = null;
+	}
+
 	if (!proxy) {
 		proxy = "";
 	}
@@ -22,7 +27,7 @@ function Pinboard(username, proxy, encode_url) {
 	}
 
 	this.username = username;
-	this.auth_token = null;
+	this.auth_token = auth_token;
 	this.proxy = proxy;
 	this.encode_url = encode_url;
 	this.server_url = "https://api.pinboard.in/v1";
@@ -105,7 +110,7 @@ Pinboard.prototype.login = function (password, callback) {
 				// Looks like someone typed the wrong user/pass combination.
 				callback(null, {
 					status: 401,
-					message: "The username or password you've entered are incorrect."
+					message: "The username or password you've entered is incorrect."
 				});
 			}
 		}
