@@ -173,3 +173,27 @@ Pinboard.prototype.add = function (url, title, callback, params) {
 		}
 	});
 }
+
+/**
+ *	Remove a bookmark
+ *
+ *	@param {String} url - URL to bookmark
+ *	@param {Function} callback - The usual (result, error) callback
+ *	@param {Array} [params] - /posts/add optinal parameters ({"name": "", "value": ""} format)
+ */
+Pinboard.prototype.delete = function (url, callback, params) {
+	params = [{ name: "url", value: url}].concat(params);
+
+	this.request("GET", "/posts/delete", params, null, function (status, response) {
+		if (status === 200) {
+			// Got your posts
+			callback(response);
+		} else if (status === 429) {
+			// Stop requesting!
+			callback(null, {
+				status: status,
+				message: "Too many requests. Try again in 5 minutes."
+			});
+		}
+	});
+}
