@@ -42,9 +42,13 @@ function Pinboard(username, auth_token, proxy, encode_url) {
  *	@param {String} body - Body of a POST request. (Use null if there's none)
  *	@param {Function} statechange(req) - XMLHttpRequest.onreadystatechange
  */
-Pinboard.prototype.request = function (method, api_method, params, body, statechange) {
+Pinboard.prototype.request = function (method, api_method, params, body, statechange, async) {
 	if (this.auth_token === null) {
 		return console.error("You still haven't logged in.");
+	}
+
+	if (async === undefined) {
+		async = true;
 	}
 
 	var url = this.server_url + api_method + "?auth_token=" + this.username + ":" + this.auth_token + "&format=json";
@@ -79,7 +83,7 @@ Pinboard.prototype.request = function (method, api_method, params, body, statech
 		}
 	};
 	
-	req.open(method, url, true);
+	req.open(method, url, async);
 	req.send(body);
 }
 
@@ -126,7 +130,7 @@ Pinboard.prototype.login = function (password, callback) {
  *	@param {Function} callback - Returns the posts JSON
  *	@param {Array} [params] - /posts/all optinal parameters ({"name": "", "value": ""} format)
  */
-Pinboard.prototype.list_posts = function (callback, params) {
+Pinboard.prototype.list_posts = function (callback, params, async) {
 	if (params === undefined) {
 		params = null;
 	}
@@ -142,7 +146,7 @@ Pinboard.prototype.list_posts = function (callback, params) {
 				message: "Too many requests. Try again in 5 minutes."
 			});
 		}
-	});
+	}, async);
 }
 
 /**
@@ -182,7 +186,11 @@ Pinboard.prototype.add = function (url, title, callback, params) {
  *	@param {Array} [params] - /posts/add optinal parameters ({"name": "", "value": ""} format)
  */
 Pinboard.prototype.delete = function (url, callback, params) {
-	params = [{ name: "url", value: url}].concat(params);
+	if (params !== undefined) {
+		params = [{ name: "url", value: url}].concat(params);
+	} else  {
+		params = [{ name: "url", value: url}];
+	}
 
 	this.request("GET", "/posts/delete", params, null, function (status, response) {
 		if (status === 200) {
