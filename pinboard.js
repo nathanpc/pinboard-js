@@ -187,15 +187,37 @@ Pinboard.prototype.add = function (url, title, callback, params) {
  */
 Pinboard.prototype.delete = function (url, callback, params) {
 	if (params !== undefined) {
-		params = [{ name: "url", value: url}].concat(params);
+		params = [{ name: "url", value: url }].concat(params);
 	} else  {
-		params = [{ name: "url", value: url}];
+		params = [{ name: "url", value: url }];
 	}
 
 	this.request("GET", "/posts/delete", params, null, function (status, response) {
 		if (status === 200) {
 			// Got your posts
 			callback(response);
+		} else if (status === 429) {
+			// Stop requesting!
+			callback(null, {
+				status: status,
+				message: "Too many requests. Try again in 5 minutes."
+			});
+		}
+	});
+}
+
+/**
+ *	Get a list of suggested tags.
+ *
+ *	@param {String} url - URL to bookmark
+ *	@param {Function} callback - The usual (result, error) callback
+ *	@param {Array} [params] - /posts/ssug optinal parameters ({"name": "", "value": ""} format)
+ */
+Pinboard.prototype.suggested_tags = function (url, callback) {
+	this.requests("GET", "/posts/suggest", [{ name: "url", value: url}], null, function (status, response) {
+		if (status === 200) {
+			// Got your tags.
+			callback(response.recommended);
 		} else if (status === 429) {
 			// Stop requesting!
 			callback(null, {
