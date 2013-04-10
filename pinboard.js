@@ -214,10 +214,10 @@ Pinboard.prototype.delete = function (url, callback, params) {
  *	@param {Array} [params] - /posts/ssug optinal parameters ({"name": "", "value": ""} format)
  */
 Pinboard.prototype.suggested_tags = function (url, callback) {
-	this.requests("GET", "/posts/suggest", [{ name: "url", value: url}], null, function (status, response) {
+	this.request("GET", "/posts/suggest", [{ name: "url", value: url}], null, function (status, response) {
 		if (status === 200) {
 			// Got your tags.
-			callback(response.recommended);
+			callback(response[1].recommended);
 		} else if (status === 429) {
 			// Stop requesting!
 			callback(null, {
